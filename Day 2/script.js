@@ -1,18 +1,16 @@
 //!  Write a python script to insert the written time from the API after every 1000 ms. Moghesh should hit the API and insert the response in the existing MongoDB collection 
 
 
-
-
-
-
 const https = require("https");
+const { MongoClient } = require("mongodb");
 
 const dbName = "test";
 const collectionName = "time_logs";
+const mongoUri = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
 
-use(dbName);
+const client = new MongoClient(mongoUri);
 
-function fetchAndInsertTime() {
+async function fetchAndInsertTime() {
   https.get("https://classmonitor.aucseapp.in/get_date_time.php", (res) => {
     let rawData = "";
 
@@ -21,25 +19,36 @@ function fetchAndInsertTime() {
     });
 
     res.on("end", () => {
-      try {
-        const apiData = JSON.parse(rawData);
+      (async () => {
+        try {
+          const apiData = JSON.parse(rawData);
 
-        const document = {
-          api_time: apiData,
-          inserted_at: new Date()
-        };
+          const document = {
+            api_time: apiData,
+            inserted_at: new Date()
+          };
 
-        db.getCollection(collectionName).insertOne(document);
+          const db = client.db(dbName);
+          await db.collection(collectionName).insertOne(document);
 
-        print("Inserted:", document);
-      } catch (err) {
-        print("JSON Parse Error:", err.message);
-      }
+          console.log("Inserted:", document);
+        } catch (err) {
+          console.error("JSON Parse Error:", err.message);
+        }
+      })();
     });
   }).on("error", (err) => {
-    print("HTTP Error:", err.message);
+    console.error("HTTP Error:", err.message);
   });
 }
 
-// Run every 1000 ms (1 second)
-setInterval(fetchAndInsertTime, 1000);
+async function main() {
+  await client.connect();
+  console.log("Connected to MongoDB");
+  setInterval(fetchAndInsertTime, 1000);
+}
+
+main().catch((err) => {
+  console.error("Startup Error:", err.message);
+  process.exit(1);
+});

@@ -1,2 +1,6 @@
 # Ignore large image assets
 Day1/Meta-deta/img/
+
+
+node_modules/.DS_Store
+.github
