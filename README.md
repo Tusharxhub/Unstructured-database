@@ -133,13 +133,4 @@ If this repository helped you understand unstructured databases, consider giving
 
 ```
 
----
 
-If you want, I can:
-- Rewrite this to **match your college syllabus exactly**
-- Make it more **research-paper style**
-- Add **MongoDB diagrams + sample datasets**
-- Convert it into a **terminal-themed README** like your Matrix style
-
-Just tell me the direction.
-```
