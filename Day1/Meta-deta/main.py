@@ -68,5 +68,7 @@ def sort_images(source_dir):
     print(f"\nProcessed: {len(metadata_log)} images")
 
 if __name__ == "__main__":
+    # Set the source directory where the main images are stored
     source_dir = os.path.join(os.path.dirname(__file__), 'img')
+    os.makedirs(source_dir, exist_ok=True)
     sort_images(source_dir)
