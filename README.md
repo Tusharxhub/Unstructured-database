@@ -130,7 +130,3 @@ Feel free to fork the repository, improve documentation, or add more examples.
 ## ⭐ Support
 
 If this repository helped you understand unstructured databases, consider giving it a ⭐.
-
-```
-
-
