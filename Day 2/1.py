@@ -1,1 +1,0 @@
-# !   Write a python script to insert the written time from the API after every 1000 ms. Moghesh should hit the API and insert the response in the existing MongoDB collection    
