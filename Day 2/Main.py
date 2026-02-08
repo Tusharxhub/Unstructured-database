@@ -1,6 +1,5 @@
 
-#! Write a python script to insert the written time from the API after every 1000 ms. Moghesh should hit the API and insert the response in
-
+#! wap in python to insert the date and time from the api after every 1000ms. Mongosh should hit the api and insert the response in the existing mongodb collections .( https://classmonitor.aucseapp.in/get_date_time.php)
 import time
 import requests
 from pymongo import MongoClient
