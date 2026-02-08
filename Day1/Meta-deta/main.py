@@ -1,3 +1,6 @@
+
+#! wap in python to sort the images based on the device type (iphone or android) and move them to respective folders. The script should also create a log file in json format with the metadata of each image (device type, filename, etc.). The script should be able to handle various image formats and should be robust against missing or incomplete metadata.
+
 import os
 import json
 from PIL import Image
