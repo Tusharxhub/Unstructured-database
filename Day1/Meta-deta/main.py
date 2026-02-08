@@ -8,70 +8,46 @@ from PIL.ExifTags import TAGS
 import shutil
 
 def get_image_metadata(image_path):
-    """Extract device info from image."""
     try:
         image = Image.open(image_path)
-        exif_data = image._getexif() or {}
-        metadata = {'filename': os.path.basename(image_path)}
-        
-        for tag_id, value in exif_data.items():
-            tag_name = TAGS.get(tag_id, tag_id)
-            if tag_name in ['Model', 'Make']:
-                metadata[tag_name] = str(value).lower()
-        
-        return metadata
+        exif = image._getexif() or {}
+        meta = {'filename': os.path.basename(image_path)}
+        for tag, val in exif.items():
+            name = TAGS.get(tag, tag)
+            if name in ['Model', 'Make']:
+                meta[name] = str(val).lower()
+        return meta
     except:
         return None
 
-def detect_device_type(metadata):
-    """Detect device type from metadata."""
-    if not metadata:
-        return None
-    
-    model = metadata.get('Model', '')
-    make = metadata.get('Make', '')
-    
-    if 'iphone' in model or 'iphone' in make:
-        return 'iphone'
-    elif any(brand in make for brand in ['samsung', 'google', 'xiaomi', 'huawei', 'oneplus', 'nokia']):
-        return 'android'
-    
+def detect_device_type(meta):
+    if not meta: return None
+    model, make = meta.get('Model', ''), meta.get('Make', '')
+    if 'iphone' in model or 'iphone' in make: return 'iphone'
+    if any(b in make for b in ['samsung','google','xiaomi','huawei','oneplus','nokia']): return 'android'
     return None
 
-def sort_images(source_dir):
-    """Sort images by device type into iPhone and Android folders."""
-    os.makedirs(os.path.join(source_dir, 'android'), exist_ok=True)
-    os.makedirs(os.path.join(source_dir, 'iphone'), exist_ok=True)
-    
-    metadata_log = []
-    extensions = ('.jpg', '.jpeg', '.png', '.gif', '.bmp', '.webp', '.heic')
-    
-    for filename in os.listdir(source_dir):
-        filepath = os.path.join(source_dir, filename)
-        
-        if os.path.isdir(filepath) or not filename.lower().endswith(extensions):
-            continue
-        
-        metadata = get_image_metadata(filepath)
-        if not metadata:
-            continue
-        
-        device_type = detect_device_type(metadata)
-        if device_type:
-            shutil.move(filepath, os.path.join(source_dir, device_type, filename))
-            print(f"Moved {filename} to {device_type}")
+def sort_images(src):
+    os.makedirs(os.path.join(src, 'android'), exist_ok=True)
+    os.makedirs(os.path.join(src, 'iphone'), exist_ok=True)
+    log, exts = [], ('.jpg','.jpeg','.png','.gif','.bmp','.webp','.heic')
+    for fn in os.listdir(src):
+        fp = os.path.join(src, fn)
+        if os.path.isdir(fp) or not fn.lower().endswith(exts): continue
+        meta = get_image_metadata(fp)
+        if not meta: continue
+        dtype = detect_device_type(meta)
+        if dtype:
+            shutil.move(fp, os.path.join(src, dtype, fn))
+            print(f"Moved {fn} to {dtype}")
         else:
-            print(f"Skipped {filename}")
-        
-        metadata_log.append(metadata)
-    
-    with open(os.path.join(source_dir, 'metadata_log.json'), 'w') as f:
-        json.dump(metadata_log, f, indent=2)
-    
-    print(f"\nProcessed: {len(metadata_log)} images")
+            print(f"Skipped {fn}")
+        log.append(meta)
+    with open(os.path.join(src, 'metadata_log.json'), 'w') as f:
+        json.dump(log, f, indent=2)
+    print(f"\nProcessed: {len(log)} images")
 
 if __name__ == "__main__":
-    # Set the source directory where the main images are stored
-    source_dir = os.path.join(os.path.dirname(__file__), 'img')
-    os.makedirs(source_dir, exist_ok=True)
-    sort_images(source_dir)
+    src_dir = os.path.join(os.path.dirname(__file__), 'img')
+    os.makedirs(src_dir, exist_ok=True)
+    sort_images(src_dir)
