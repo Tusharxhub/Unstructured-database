@@ -20,3 +20,8 @@ delete_filter = {"name": "Tushar"}  # Change as needed
 # Delete one document matching the filter
 result = collection.delete_one(delete_filter)
 print("Deleted count:", result.deleted_count)
+
+#* output
+#* Documents in collection before deletion:
+#* {'_id': ObjectId('69899318599401bafb4fc05e'), 'name': 'Tushar', 'age': 21, 'city': 'Kolkata'}
+#* Deleted count: 1	
