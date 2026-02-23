@@ -16,18 +16,15 @@ async function predictAndUpdateGender() {
     const database = client.db('school');
     const collection = database.collection('classmates');
 
-    // Fetch all classmates
     const classmates = await collection.find({}).toArray();
     
     console.log('Fetching classmates and predicting gender...\n');
 
     for (const classmate of classmates) {
       try {
-        // Call Genderize.io API to predict gender
         const response = await axios.get(`https://api.genderize.io?name=${classmate.name.split(' ')[0]}`);
         const { gender, probability } = response.data;
 
-        // Update document with predicted gender and probability
         await collection.updateOne(
           { _id: classmate._id },
           { 
