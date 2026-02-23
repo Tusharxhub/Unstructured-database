@@ -23,7 +23,7 @@ async function insertClassmates() {
       { name: 'Snehasish Mondal', age: 20, hobbies: ['dancing', 'writing'], branch: 'ME' },
       { name: 'Asad Iqbal', age: 21, hobbies: ['sports', 'photography'], branch: 'EE' },
       { name: 'Aditya Dey', age: 20, hobbies: ['cooking', 'gardening'], branch: 'CSE' },
-      { name: 'SAmriddhi Singha', age: 21, hobbies: ['football', 'movies'], branch: 'ME' },
+      { name: 'Samriddhi Singha', age: 21, hobbies: ['football', 'movies'], branch: 'ME' },
       { name: 'Sayan Mukharjee', age: 20, hobbies: ['yoga', 'blogging'], branch: 'ECE' },
       { name: 'Shovon Haldar', age: 21, hobbies: ['cycling', 'sketching'], branch: 'CE' },
       { name: 'Arnab Mondal', age: 20, hobbies: ['swimming', 'singing'], branch: 'CSE' }
