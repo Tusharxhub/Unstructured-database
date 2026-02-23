@@ -6,45 +6,31 @@
 
 const { MongoClient } = require('mongodb');
 
-const uri = 'mongodb://localhost:27017';
-const client = new MongoClient(uri);
+const client = new MongoClient('mongodb://localhost:27017');
 
 async function archiveAndDeleteLowProbability() {
-  try {
-    await client.connect();
-    const database = client.db('school');
-    const classmates = database.collection('classmates');
-    const archived = database.collection('Archived');
+    try {
+        await client.connect();
+        const db = client.db('school');
+        const classmates = db.collection('classmates');
+        const archived = db.collection('Archived');
 
-    // Find documents with gender probability < 50%
-    const lowProbabilityDocs = await classmates.find({
-      gender_probability: { $lt: 0.5 }
-    }).toArray();
+        const docs = await classmates.find({ gender_probability: { $lt: 0.5 } }).toArray();
 
-    if (lowProbabilityDocs.length === 0) {
-      console.log('No documents with probability < 50% found.');
-      return;
+        if (docs.length === 0) {
+            console.log('No documents with probability < 50% found.');
+            return;
+        }
+
+        await archived.insertMany(docs);
+        await classmates.deleteMany({ gender_probability: { $lt: 0.5 } });
+
+        console.log(`${docs.length} documents archived and deleted.\n`);
+        docs.forEach(doc => console.log(`- ${doc.name} (${(doc.gender_probability * 100).toFixed(2)}%)`));
+
+    } finally {
+        await client.close();
     }
-
-    // Insert into Archived collection
-    const insertResult = await archived.insertMany(lowProbabilityDocs);
-    console.log(`${insertResult.insertedCount} documents archived.`);
-
-    // Delete from classmates collection
-    const deleteResult = await classmates.deleteMany({
-      gender_probability: { $lt: 0.5 }
-    });
-    console.log(`${deleteResult.deletedCount} documents deleted from classmates.\n`);
-
-    // Display archived documents
-    console.log('Archived Documents:');
-    lowProbabilityDocs.forEach(doc => {
-      console.log(`- ${doc.name} (Probability: ${(doc.gender_probability * 100).toFixed(2)}%)`);
-    });
-
-  } finally {
-    await client.close();
-  }
 }
 
 archiveAndDeleteLowProbability().catch(console.error);
