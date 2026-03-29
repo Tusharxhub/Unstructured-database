@@ -1,190 +1,108 @@
 
 # Unstructured Database
 
-A practical repository focused on understanding, designing, and working with **unstructured databases**.  
-This project explores how unstructured data is stored, queried, and managed using modern NoSQL concepts and tools.
+Hands-on practice repository for unstructured and semi-structured data concepts,
+with Python and JavaScript exercises organized by day and topic.
 
----
+## About
 
-## 📌 About the Project
+This project is focused on learning by doing. It contains small scripts,
+practice problems, and mini setups related to NoSQL-style thinking and
+general data handling workflows.
 
-Traditional relational databases work well with structured data, but modern applications often deal with data that has no fixed schema.  
-This repository is created to study and experiment with **unstructured and semi-structured data models**, their use cases, and real-world handling techniques.
+Main goals:
+- Understand schema-less data ideas
+- Practice CRUD-like operations and data manipulation
+- Build comfort with Python scripting and practical exercises
 
-The project is aimed at:
-- Learning core concepts of unstructured databases
-- Understanding schema-less data storage
-- Practicing queries and operations on NoSQL databases
+## Current Workspace Structure
 
----
-
-## 🧠 Key Concepts Covered
-
-- Unstructured vs Structured Data
-- Schema-less Databases
-- Document-based Databases
-- Collections and Documents
-- CRUD Operations
-- Indexing Basics
-- Real-world use cases
-
----
-
-
-## 🛠️ Technologies Used
-
-- **MongoDB** (Primary database)
-- **Python** (Primary scripting language)
-- **pymongo** (Python MongoDB driver)
-- **Mongosh** (MongoDB Shell)
-- **JavaScript** (for some examples and queries)
-- **JSON / BSON** data formats
-
----
-
-## 📂 Project Structure
-
+```text
+.
+├── package.json
+├── README.md
+├── Day1/
+│   ├── 1.py
+│   ├── 2.py
+│   └── Meta-deta/
+│       ├── main.py
+│       ├── img/
+│       └── Question/
+├── Day 2/
+│   ├── 1.py
+│   └── Main.py
+├── Day 3/
+│   ├── Consumer.py
+│   ├── docker-compose.yml
+│   ├── Dockerfile
+│   └── Main.py
+├── Day 4/
+├── Day 5/
+└── Exam/
+    ├── Archived.js
+    ├── classmate.js
+    ├── friend.js
+    ├── happy_number.js
+    └── package.json
 ```
 
-Unstructured-database/
-│
-├── notes/                # Concept explanations and theory
-├── examples/             # Sample unstructured data
-├── queries/              # MongoDB queries and operations
-├── diagrams/             # Architecture or flow diagrams
-└── README.md
+## Prerequisites
 
-````
+- Python 3.8+
+- pip
+- Node.js and npm (for `Exam/` JavaScript work)
+- Docker (optional, for `Day 3/` container setup)
 
----
+## Quick Start
 
-## 🚀 Getting Started
+1. Create and activate a Python virtual environment:
 
-
-### Prerequisites
-- MongoDB installed
-- Python 3.7+
-- pip (Python package manager)
-- Basic understanding of databases
-- Node.js (optional, if using JS scripts)
-
-
-### Python Environment Setup
-
-1. **Create a virtual environment (recommended):**
-  ```bash
-  python3 -m venv .venv
-  source .venv/bin/activate
-  ```
-
-2. **Install dependencies:**
-  ```bash
-  pip install pymongo requests
-  ```
-
-### Run MongoDB Shell
 ```bash
-mongosh
+python3 -m venv .venv
+source .venv/bin/activate
 ```
 
-### Create Database
-```js
-use unstructuredDB
+2. Install Python dependencies as needed:
+
+```bash
+pip install pymongo requests
 ```
 
----
+3. Run a Python file:
 
-
-## 📊 Example Document
-
-```json
-{
-  "name": "User A",
-  "skills": ["Python", "MongoDB", "pymongo"],
-  "projects": {
-    "title": "DevMatch",
-    "status": "active"
-  }
-}
+```bash
+python "Day 2/Main.py"
 ```
 
-This flexibility is what makes unstructured databases powerful for modern applications.
+4. Run JavaScript examples (inside `Exam/`):
 
----
-
-## 🐍 Python MongoDB CRUD Examples
-
-### Insert a Document
-```python
-from pymongo import MongoClient
-client = MongoClient("mongodb://127.0.0.1:27017")
-db = client["test"]
-collection = db["sample_collection"]
-document = {"name": "John", "age": 30, "city": "New York"}
-result = collection.insert_one(document)
-print("Inserted document ID:", result.inserted_id)
+```bash
+cd Exam
+npm install
+node happy_number.js
 ```
 
-### Find Documents
-```python
-for doc in collection.find():
-    print(doc)
+5. Run Day 3 Docker setup (optional):
+
+```bash
+cd "Day 3"
+docker compose up --build
 ```
 
-### Update a Document
-```python
-update_filter = {"name": "John"}
-update_operation = {"$set": {"city": "San Francisco"}}
-result = collection.update_one(update_filter, update_operation)
-print("Matched count:", result.matched_count)
-print("Modified count:", result.modified_count)
-```
+## Notes
 
-### Delete a Document
-```python
-delete_filter = {"name": "John"}
-result = collection.delete_one(delete_filter)
-print("Deleted count:", result.deleted_count)
-```
+- Folder names like `Day 2` and `Day 3` include spaces, so quote paths in shell commands.
+- Some scripts are independent exercises; run them individually.
 
----
+## Contribution
 
-## 🎯 Learning Outcome
+Contributions are welcome. You can add:
+- New practice scripts
+- Better documentation for each day
+- Additional dataset-based examples
 
+## Contact
 
-After working with this repository, you will:
-
-* Understand how unstructured databases work
-* Be comfortable with MongoDB basics (using both Python and Mongosh)
-* Know when to choose NoSQL over SQL
-* Handle real-world schema-less data confidently
-
----
-
-## 🔮 Future Enhancements
-
-* Add aggregation pipeline examples
-* Integrate with a Node.js backend
-* Performance comparison with SQL databases
-* Real project use-case implementation
-
----
-
-## 🤝 Contribution
-
-Contributions are welcome.
-Feel free to fork the repository, improve documentation, or add more examples.
-
----
-
-## 📬 Contact
-
-📧 **Email:** [t.k.d.dey2033929837@gmail.com](mailto:t.k.d.dey2033929837@gmail.com)
-🔗 **GitHub:** [https://github.com/Tusharxhub](https://github.com/Tusharxhub)
-📸 **Instagram:** [https://www.instagram.com/tushardevx01/](https://www.instagram.com/tushardevx01/)
-
----
-
-## ⭐ Support
-
-If this repository helped you understand unstructured databases, consider giving it a ⭐.
+- Email: [t.k.d.dey2033929837@gmail.com](mailto:t.k.d.dey2033929837@gmail.com)
+- GitHub: [Tusharxhub](https://github.com/Tusharxhub)
+- Instagram: [tushardevx01](https://www.instagram.com/tushardevx01/)
