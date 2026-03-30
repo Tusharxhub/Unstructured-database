@@ -19,7 +19,7 @@ import time
 from datetime import datetime, timezone
 
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
+from kafka.errors import KafkaError, NoBrokersAvailable
 
 
 def build_sensor_payload(sensor_id: str) -> dict:
@@ -43,13 +43,27 @@ def create_producer(bootstrap_servers: str) -> KafkaProducer:
 	)
 
 
+def wait_for_kafka(bootstrap_servers: str, retry_seconds: int = 5) -> KafkaProducer:
+	"""Keep retrying until Kafka broker is reachable."""
+	while True:
+		try:
+			producer = create_producer(bootstrap_servers)
+			return producer
+		except NoBrokersAvailable:
+			print(
+				f"Kafka not available at {bootstrap_servers}. "
+				f"Retrying in {retry_seconds}s..."
+			)
+			time.sleep(retry_seconds)
+
+
 def main() -> None:
 	bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 	topic = os.getenv("KAFKA_TOPIC", "iot_sensor_data")
 	sensor_id = os.getenv("SENSOR_ID", "sensor-001")
 	interval_seconds = float(os.getenv("PRODUCER_INTERVAL_SECONDS", "1"))
 
-	producer = create_producer(bootstrap_servers)
+	producer = wait_for_kafka(bootstrap_servers)
 	print(f"Producer started -> topic={topic}, bootstrap={bootstrap_servers}")
 
 	try:

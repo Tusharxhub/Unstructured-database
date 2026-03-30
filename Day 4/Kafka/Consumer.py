@@ -24,8 +24,10 @@ from __future__ import annotations
 
 import json
 import os
+import time
 
 from kafka import KafkaConsumer
+from kafka.errors import NoBrokersAvailable
 from pymongo import MongoClient
 from pymongo.errors import PyMongoError
 
@@ -42,6 +44,36 @@ def create_consumer(bootstrap_servers: str, topic: str, group_id: str) -> KafkaC
 	)
 
 
+def wait_for_kafka_consumer(
+	bootstrap_servers: str,
+	topic: str,
+	group_id: str,
+	retry_seconds: int = 5,
+) -> KafkaConsumer:
+	"""Keep retrying until Kafka broker is reachable."""
+	while True:
+		try:
+			return create_consumer(bootstrap_servers, topic, group_id)
+		except NoBrokersAvailable:
+			print(
+				f"Kafka not available at {bootstrap_servers}. "
+				f"Retrying in {retry_seconds}s..."
+			)
+			time.sleep(retry_seconds)
+
+
+def wait_for_mongo(mongo_uri: str, retry_seconds: int = 5) -> MongoClient:
+	"""Keep retrying until MongoDB is reachable."""
+	while True:
+		try:
+			client = MongoClient(mongo_uri, serverSelectionTimeoutMS=3000)
+			client.admin.command("ping")
+			return client
+		except Exception as err:
+			print(f"MongoDB not available at {mongo_uri}: {err}. Retrying in {retry_seconds}s...")
+			time.sleep(retry_seconds)
+
+
 def main() -> None:
 	bootstrap_servers = os.getenv("KAFKA_BOOTSTRAP_SERVERS", "localhost:9092")
 	topic = os.getenv("KAFKA_TOPIC", "iot_sensor_data")
@@ -50,9 +82,9 @@ def main() -> None:
 	mongo_db = os.getenv("MONGO_DB", "iot_data")
 	mongo_collection = os.getenv("MONGO_COLLECTION", "sensor_readings")
 
-	mongo_client = MongoClient(mongo_uri)
+	mongo_client = wait_for_mongo(mongo_uri)
 	collection = mongo_client[mongo_db][mongo_collection]
-	consumer = create_consumer(bootstrap_servers, topic, group_id)
+	consumer = wait_for_kafka_consumer(bootstrap_servers, topic, group_id)
 
 	print(
 		"Consumer started -> "
