@@ -7,78 +7,46 @@
 
 
 
-class Node {
-  constructor(id, type, data) {
-    this.id = id;
-    this.type = type;
-    this.data = data;
-    this.rel = {};
-  }
-  addRel(type, id) {
-    (this.rel[type] ??= new Set()).add(id);
-  }
-  removeRel(type, id) {
-    if (!this.rel[type]) return;
-    this.rel[type].delete(id);
-    if (!this.rel[type].size) delete this.rel[type];
-  }
-}
-
-class GraphDB {
+class DB {
   constructor() {
     this.nodes = {};
-    this.nextId = 1;
+    this.i = 1;
   }
-
   insert(type, data) {
-    const id = `${type}-${this.nextId++}`;
-    this.nodes[id] = new Node(id, type, data);
+    const id = `${type}-${this.i++}`;
+    this.nodes[id] = { id, type, data, rel: {} };
     return id;
   }
-
-  link(from, rel, to) {
-    if (!this.nodes[from] || !this.nodes[to]) return false;
-    this.nodes[from].addRel(rel, to);
-    this.nodes[to].addRel(`${rel}_by`, from);
+  addRel(a, r, b) {
+    if (!this.nodes[a] || !this.nodes[b]) return false;
+    (this.nodes[a].rel[r] ??= new Set()).add(b);
+    (this.nodes[b].rel[`${r}_by`] ??= new Set()).add(a);
     return true;
   }
-
-  get(id) {
-    return this.nodes[id] || null;
-  }
-
   update(id, patch) {
     if (!this.nodes[id]) return false;
     this.nodes[id].data = { ...this.nodes[id].data, ...patch };
     return true;
   }
-
-  unlink(from, rel, to) {
-    if (!this.nodes[from] || !this.nodes[to]) return false;
-    this.nodes[from].removeRel(rel, to);
-    this.nodes[to].removeRel(`${rel}_by`, from);
+  delRel(a, r, b) {
+    if (!this.nodes[a] || !this.nodes[b]) return false;
+    this.nodes[a].rel[r]?.delete(b);
+    this.nodes[b].rel[`${r}_by`]?.delete(a);
     return true;
   }
-
-  deleteNode(id) {
+  delNode(id) {
     if (!this.nodes[id]) return false;
-    for (const n of Object.values(this.nodes)) {
-      for (const r of Object.keys(n.rel)) n.removeRel(r, id);
-    }
+    for (const n of Object.values(this.nodes))
+      for (const k in n.rel) n.rel[k].delete(id);
     delete this.nodes[id];
     return true;
   }
-
   print() {
     console.log(
       JSON.stringify(
         Object.values(this.nodes).map((n) => ({
-          id: n.id,
-          type: n.type,
-          data: n.data,
-          rel: Object.fromEntries(
-            Object.entries(n.rel).map(([k, v]) => [k, [...v]])
-          ),
+          ...n,
+          rel: Object.fromEntries(Object.entries(n.rel).map(([k, v]) => [k, [...v]])),
         })),
         null,
         2
@@ -87,15 +55,14 @@ class GraphDB {
   }
 }
 
-// Demo
-const db = new GraphDB();
-const a1 = db.insert("author", { name: "J.K. Rowling" });
-const b1 = db.insert("book", { title: "Harry Potter" });
-const r1 = db.insert("reader", { name: "Alice" });
+const db = new DB();
+const a = db.insert("author", { name: "J.K. Rowling" });
+const b = db.insert("book", { title: "Harry Potter" });
+const r = db.insert("reader", { name: "Alice" });
 
-db.link(a1, "written", b1);
-db.link(r1, "reads", b1);
-db.update(r1, { age: 26 });
-db.unlink(r1, "reads", b1);
-db.deleteNode(b1);
+db.addRel(a, "written", b);
+db.addRel(r, "reads", b);
+db.update(r, { age: 26 });
+db.delRel(r, "reads", b);
+db.delNode(b);
 db.print();
