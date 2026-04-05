@@ -9,50 +9,42 @@
 const { MongoClient } = require("mongodb");
 
 (async () => {
-  const c = new MongoClient("mongodb://localhost:27018");
-  const N = 100000, now = Date.now;
-
+  const c = new MongoClient("mongodb://localhost:27018"), N = 1e5;
+  const s = (x) => x?.stage || s(x?.inputStage) || s(x?.innerStage);
   try {
     await c.connect();
     const col = c.db("student_db").collection("students");
     await col.drop().catch(() => {});
 
-    let t = now();
+    let t = Date.now();
     await col.insertMany(
       Array.from({ length: N }, (_, i) => ({
         studentId: i + 1,
         name: `Student_${i + 1}`,
         email: `student${i + 1}@university.edu`,
         age: 18 + ((Math.random() * 15) | 0),
-      })),
-      { ordered: false }
+      }))
     );
-    console.log(`insert: ${now() - t}ms`);
-
-    const stage = (x) =>
-      x.executionStats.executionStages.inputStage?.stage ||
-      x.executionStats.executionStages.stage;
+    console.log("insert:", Date.now() - t, "ms");
 
     const run = async (label, q) => {
-      t = now();
+      t = Date.now();
       const e = await col.find(q).explain("executionStats");
       console.log(label, {
-        stage: stage(e), // COLLSCAN / IXSCAN / EXPRESS_IXSCAN(if chosen)
+        stage: s(e.executionStats.executionStages),
         docs: e.executionStats.totalDocsExamined,
         ret: e.executionStats.nReturned,
-        ms: now() - t,
+        ms: Date.now() - t,
       });
     };
 
     await run("COLLSCAN", { age: { $gt: 25 } });
-
     await col.createIndex({ age: 1 });
-    await run("IXSCAN(age)", { age: { $gt: 25 } });
-
+    await run("IXSCAN", { age: { $gt: 25 } });
     await col.createIndex({ studentId: 1 }, { unique: true });
-    await run("UNIQUE IXSCAN(studentId)", { studentId: 50000 });
+    await run("UNIQUE/EXPRESS IXSCAN", { studentId: 50000 });
 
-    console.log("indexes:", await col.listIndexes().toArray());
+    console.log(await col.listIndexes().toArray());
   } finally {
     await c.close();
   }
