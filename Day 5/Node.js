@@ -10,181 +10,92 @@
 class Node {
   constructor(id, type, data) {
     this.id = id;
-    this.type = type; // 'author' | 'book' | 'reader'
+    this.type = type;
     this.data = data;
-    this.relationships = {}; // { relationType: [nodeId1, nodeId2, ...] }
+    this.rel = {};
   }
-
-  addRelationship(relationType, targetNodeId) {
-    if (!this.relationships[relationType]) {
-      this.relationships[relationType] = [];
-    }
-    if (!this.relationships[relationType].includes(targetNodeId)) {
-      this.relationships[relationType].push(targetNodeId);
-    }
+  addRel(type, id) {
+    (this.rel[type] ??= new Set()).add(id);
   }
-
-  removeRelationship(relationType, targetNodeId) {
-    if (this.relationships[relationType]) {
-      this.relationships[relationType] = this.relationships[relationType].filter(
-        (id) => id !== targetNodeId
-      );
-      if (this.relationships[relationType].length === 0) {
-        delete this.relationships[relationType];
-      }
-    }
-  }
-
-  updateData(newData) {
-    this.data = { ...this.data, ...newData };
-  }
-
-  toString() {
-    return `Node(id=${this.id}, type=${this.type}, data=${JSON.stringify(this.data)})`;
+  removeRel(type, id) {
+    if (!this.rel[type]) return;
+    this.rel[type].delete(id);
+    if (!this.rel[type].size) delete this.rel[type];
   }
 }
 
-class GraphDatabase {
+class GraphDB {
   constructor() {
-    this.nodes = {}; // { nodeId: Node }
+    this.nodes = {};
     this.nextId = 1;
   }
 
-  // CREATE: Insert a new node
-  insertNode(type, data) {
+  insert(type, data) {
     const id = `${type}-${this.nextId++}`;
-    const node = new Node(id, type, data);
-    this.nodes[id] = node;
-    console.log(`✓ Inserted: ${node.toString()}`);
+    this.nodes[id] = new Node(id, type, data);
     return id;
   }
 
-  // CREATE: Establish relationship between two nodes
-  establishRelationship(fromNodeId, relationType, toNodeId) {
-    const fromNode = this.nodes[fromNodeId];
-    const toNode = this.nodes[toNodeId];
+  link(from, rel, to) {
+    if (!this.nodes[from] || !this.nodes[to]) return false;
+    this.nodes[from].addRel(rel, to);
+    this.nodes[to].addRel(`${rel}_by`, from);
+    return true;
+  }
 
-    if (!fromNode || !toNode) {
-      console.error(
-        `✗ Error: Node not found. From: ${fromNodeId}, To: ${toNodeId}`
-      );
-      return false;
+  get(id) {
+    return this.nodes[id] || null;
+  }
+
+  update(id, patch) {
+    if (!this.nodes[id]) return false;
+    this.nodes[id].data = { ...this.nodes[id].data, ...patch };
+    return true;
+  }
+
+  unlink(from, rel, to) {
+    if (!this.nodes[from] || !this.nodes[to]) return false;
+    this.nodes[from].removeRel(rel, to);
+    this.nodes[to].removeRel(`${rel}_by`, from);
+    return true;
+  }
+
+  deleteNode(id) {
+    if (!this.nodes[id]) return false;
+    for (const n of Object.values(this.nodes)) {
+      for (const r of Object.keys(n.rel)) n.removeRel(r, id);
     }
+    delete this.nodes[id];
+    return true;
+  }
 
-    fromNode.addRelationship(relationType, toNodeId);
-    toNode.addRelationship(`${relationType}_reverse`, fromNodeId);
+  print() {
     console.log(
-      `✓ Relationship established: ${fromNodeId} --[${relationType}]--> ${toNodeId}`
+      JSON.stringify(
+        Object.values(this.nodes).map((n) => ({
+          id: n.id,
+          type: n.type,
+          data: n.data,
+          rel: Object.fromEntries(
+            Object.entries(n.rel).map(([k, v]) => [k, [...v]])
+          ),
+        })),
+        null,
+        2
+      )
     );
-    return true;
-  }
-
-  // READ: Retrieve node by ID
-  getNode(nodeId) {
-    return this.nodes[nodeId];
-  }
-
-  // UPDATE: Modify node data
-  updateNode(nodeId, newData) {
-    const node = this.nodes[nodeId];
-    if (!node) {
-      console.error(`✗ Error: Node ${nodeId} not found`);
-      return false;
-    }
-    node.updateData(newData);
-    console.log(`✓ Updated: ${node.toString()}`);
-    return true;
-  }
-
-  // DELETE: Remove relationship between two nodes
-  deleteRelationship(fromNodeId, relationType, toNodeId) {
-    const fromNode = this.nodes[fromNodeId];
-    const toNode = this.nodes[toNodeId];
-
-    if (!fromNode || !toNode) {
-      console.error(
-        `✗ Error: Node not found. From: ${fromNodeId}, To: ${toNodeId}`
-      );
-      return false;
-    }
-
-    fromNode.removeRelationship(relationType, toNodeId);
-    toNode.removeRelationship(`${relationType}_reverse`, fromNodeId);
-    console.log(
-      `✓ Relationship deleted: ${fromNodeId} --[${relationType}]--> ${toNodeId}`
-    );
-    return true;
-  }
-
-  // DELETE: Remove a node and its relationships
-  deleteNode(nodeId) {
-    const node = this.nodes[nodeId];
-    if (!node) {
-      console.error(`✗ Error: Node ${nodeId} not found`);
-      return false;
-    }
-
-    // Remove all relationships pointing to this node
-    Object.values(this.nodes).forEach((otherNode) => {
-      Object.keys(otherNode.relationships).forEach((relationType) => {
-        otherNode.removeRelationship(relationType, nodeId);
-      });
-    });
-
-    delete this.nodes[nodeId];
-    console.log(`✓ Node deleted: ${nodeId}`);
-    return true;
-  }
-
-  printGraph() {
-    console.log("\n=== Graph State ===");
-    Object.values(this.nodes).forEach((node) => {
-      console.log(`${node.toString()}`);
-      if (Object.keys(node.relationships).length > 0) {
-        console.log(
-          `  Relationships: ${JSON.stringify(node.relationships)}`
-        );
-      }
-    });
   }
 }
 
-// Example usage
-console.log("=== Graph Database CRUD Operations ===\n");
+// Demo
+const db = new GraphDB();
+const a1 = db.insert("author", { name: "J.K. Rowling" });
+const b1 = db.insert("book", { title: "Harry Potter" });
+const r1 = db.insert("reader", { name: "Alice" });
 
-const db = new GraphDatabase();
-
-// CREATE: Insert nodes
-const author1 = db.insertNode("author", { name: "J.K. Rowling", born: 1965 });
-const author2 = db.insertNode("author", { name: "George R.R. Martin", born: 1948 });
-const book1 = db.insertNode("book", { title: "Harry Potter", year: 1997 });
-const book2 = db.insertNode("book", { title: "Game of Thrones", year: 1996 });
-const reader1 = db.insertNode("reader", { name: "Alice", age: 25 });
-
-// CREATE: Establish relationships
-db.establishRelationship(author1, "written", book1);
-db.establishRelationship(author2, "written", book2);
-db.establishRelationship(reader1, "reads", book1);
-db.establishRelationship(reader1, "reads", book2);
-
-db.printGraph();
-
-// UPDATE: Modify node data
-console.log("\n=== UPDATE Operations ===");
-db.updateNode(reader1, { age: 26, premium: true });
-
-// DELETE: Remove a relationship
-console.log("\n=== DELETE Relationship ===");
-db.deleteRelationship(reader1, "reads", book2);
-
-db.printGraph();
-
-// DELETE: Remove a node
-console.log("\n=== DELETE Node ===");
-db.deleteNode(book2);
-
-db.printGraph();
-
-
-
-
+db.link(a1, "written", b1);
+db.link(r1, "reads", b1);
+db.update(r1, { age: 26 });
+db.unlink(r1, "reads", b1);
+db.deleteNode(b1);
+db.print();
