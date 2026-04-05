@@ -9,12 +9,12 @@
 const { MongoClient } = require("mongodb");
 
 (async () => {
-  const client = new MongoClient("mongodb://localhost:27018/");
-  const N = 1e5, now = Date.now;
+  const c = new MongoClient("mongodb://localhost:27018");
+  const N = 100000, now = Date.now;
 
   try {
-    await client.connect();
-    const col = client.db("student_db").collection("students");
+    await c.connect();
+    const col = c.db("student_db").collection("students");
     await col.drop().catch(() => {});
 
     let t = now();
@@ -23,48 +23,37 @@ const { MongoClient } = require("mongodb");
         studentId: i + 1,
         name: `Student_${i + 1}`,
         email: `student${i + 1}@university.edu`,
-        age: 18 + (Math.random() * 15) | 0
+        age: 18 + ((Math.random() * 15) | 0),
       })),
       { ordered: false }
     );
-    console.log(`Inserted ${N} in ${now() - t}ms`);
+    console.log(`insert: ${now() - t}ms`);
 
-    const stage = (e) =>
-      e.executionStats.executionStages.inputStage?.stage ||
-      e.executionStats.executionStages.stage;
+    const stage = (x) =>
+      x.executionStats.executionStages.inputStage?.stage ||
+      x.executionStats.executionStages.stage;
 
-    const bench = async (label, query) => {
+    const run = async (label, q) => {
       t = now();
-      const e = await col.find(query).explain("executionStats");
-      const ms = now() - t;
+      const e = await col.find(q).explain("executionStats");
       console.log(label, {
-        stage: stage(e),
-        docsExamined: e.executionStats.totalDocsExamined,
-        nReturned: e.executionStats.nReturned,
-        ms
+        stage: stage(e), // COLLSCAN / IXSCAN / EXPRESS_IXSCAN(if chosen)
+        docs: e.executionStats.totalDocsExamined,
+        ret: e.executionStats.nReturned,
+        ms: now() - t,
       });
-      return ms;
     };
 
-    const collMs = await bench("COLLSCAN", { age: { $gt: 25 } });
+    await run("COLLSCAN", { age: { $gt: 25 } });
 
     await col.createIndex({ age: 1 });
-    const ixMs = await bench("IXSCAN(age)", { age: { $gt: 25 } });
+    await run("IXSCAN(age)", { age: { $gt: 25 } });
 
     await col.createIndex({ studentId: 1 }, { unique: true });
-    const uixMs = await bench("IXSCAN(unique studentId)", { studentId: 50000 });
+    await run("UNIQUE IXSCAN(studentId)", { studentId: 50000 });
 
-    console.log("Indexes:", await col.listIndexes().toArray());
-    console.log("Analysis:", {
-      collMs,
-      ixMs,
-      uixMs,
-      ixVsColl: `${(((collMs - ixMs) / collMs) * 100).toFixed(2)}%`,
-      uniqueVsColl: `${(((collMs - uixMs) / collMs) * 100).toFixed(2)}%`
-    });
-  } catch (e) {
-    console.error(e.message);
+    console.log("indexes:", await col.listIndexes().toArray());
   } finally {
-    await client.close();
+    await c.close();
   }
 })();
