@@ -8,67 +8,51 @@
 
 const { MongoClient } = require("mongodb");
 
-const URI = "mongodb://localhost:27018/";
-const DB = "student_db";
-const COL = "students";
-const N = 100000;
-
 (async () => {
-  const client = new MongoClient(URI);
-  const now = () => Date.now();
+  const client = new MongoClient("mongodb://localhost:27018/");
+  const N = 1e5, now = Date.now;
 
   try {
     await client.connect();
-    const col = client.db(DB).collection(COL);
+    const col = client.db("student_db").collection("students");
     await col.drop().catch(() => {});
 
-    const tIns = now();
+    let t = now();
     await col.insertMany(
       Array.from({ length: N }, (_, i) => ({
         studentId: i + 1,
         name: `Student_${i + 1}`,
         email: `student${i + 1}@university.edu`,
-        age: 18 + Math.floor(Math.random() * 15),
+        age: 18 + (Math.random() * 15) | 0
       })),
       { ordered: false }
     );
-    console.log(`Inserted ${N} docs in ${now() - tIns}ms`);
+    console.log(`Inserted ${N} in ${now() - t}ms`);
 
-    const getStage = (e) =>
+    const stage = (e) =>
       e.executionStats.executionStages.inputStage?.stage ||
       e.executionStats.executionStages.stage;
 
-    const t1 = now();
-    const coll = await col.find({ age: { $gt: 25 } }).explain("executionStats");
-    const collMs = now() - t1;
-    console.log("CollScan:", {
-      stage: getStage(coll),
-      docsExamined: coll.executionStats.totalDocsExamined,
-      nReturned: coll.executionStats.nReturned,
-      ms: collMs,
-    });
+    const bench = async (label, query) => {
+      t = now();
+      const e = await col.find(query).explain("executionStats");
+      const ms = now() - t;
+      console.log(label, {
+        stage: stage(e),
+        docsExamined: e.executionStats.totalDocsExamined,
+        nReturned: e.executionStats.nReturned,
+        ms
+      });
+      return ms;
+    };
+
+    const collMs = await bench("COLLSCAN", { age: { $gt: 25 } });
 
     await col.createIndex({ age: 1 });
-    const t2 = now();
-    const ix = await col.find({ age: { $gt: 25 } }).explain("executionStats");
-    const ixMs = now() - t2;
-    console.log("IXScan(age):", {
-      stage: getStage(ix),
-      docsExamined: ix.executionStats.totalDocsExamined,
-      nReturned: ix.executionStats.nReturned,
-      ms: ixMs,
-    });
+    const ixMs = await bench("IXSCAN(age)", { age: { $gt: 25 } });
 
     await col.createIndex({ studentId: 1 }, { unique: true });
-    const t3 = now();
-    const uix = await col.find({ studentId: 50000 }).explain("executionStats");
-    const uixMs = now() - t3;
-    console.log("IXScan(unique studentId):", {
-      stage: getStage(uix),
-      docsExamined: uix.executionStats.totalDocsExamined,
-      nReturned: uix.executionStats.nReturned,
-      ms: uixMs,
-    });
+    const uixMs = await bench("IXSCAN(unique studentId)", { studentId: 50000 });
 
     console.log("Indexes:", await col.listIndexes().toArray());
     console.log("Analysis:", {
@@ -76,7 +60,7 @@ const N = 100000;
       ixMs,
       uixMs,
       ixVsColl: `${(((collMs - ixMs) / collMs) * 100).toFixed(2)}%`,
-      uniqueVsColl: `${(((collMs - uixMs) / collMs) * 100).toFixed(2)}%`,
+      uniqueVsColl: `${(((collMs - uixMs) / collMs) * 100).toFixed(2)}%`
     });
   } catch (e) {
     console.error(e.message);
